@@ -33,7 +33,7 @@ class PostingServiceTest {
 
     @Test
     void postsBalancedEntrySuccessfully() {
-        when(repository.findByIdempotencyKey("key-1")).thenReturn(Optional.empty());
+        when(repository.findByIdempotencyKeyFetchingPostings("key-1")).thenReturn(Optional.empty());
         LedgerAccount debitAccount = LedgerAccount.customerDeposit(UUID.randomUUID(), "BRL");
         LedgerAccount creditAccount = LedgerAccount.settlement("PIX_SETTLEMENT", "PIX", "BRL");
 
@@ -49,7 +49,7 @@ class PostingServiceTest {
 
     @Test
     void rejectsUnbalancedEntry() {
-        when(repository.findByIdempotencyKey("key-2")).thenReturn(Optional.empty());
+        when(repository.findByIdempotencyKeyFetchingPostings("key-2")).thenReturn(Optional.empty());
         LedgerAccount debitAccount = LedgerAccount.customerDeposit(UUID.randomUUID(), "BRL");
         LedgerAccount creditAccount = LedgerAccount.settlement("PIX_SETTLEMENT", "PIX", "BRL");
 
@@ -65,7 +65,7 @@ class PostingServiceTest {
     @Test
     void isIdempotentForSameKey() {
         JournalEntry existing = JournalEntry.create("já existente", "key-3", "TEST");
-        when(repository.findByIdempotencyKey("key-3")).thenReturn(Optional.of(existing));
+        when(repository.findByIdempotencyKeyFetchingPostings("key-3")).thenReturn(Optional.of(existing));
         LedgerAccount debitAccount = LedgerAccount.customerDeposit(UUID.randomUUID(), "BRL");
         LedgerAccount creditAccount = LedgerAccount.settlement("PIX_SETTLEMENT", "PIX", "BRL");
 

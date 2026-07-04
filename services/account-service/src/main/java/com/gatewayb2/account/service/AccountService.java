@@ -95,13 +95,13 @@ public class AccountService {
 
     @Transactional(readOnly = true)
     public Account findById(UUID accountId) {
-        return accountRepository.findById(accountId)
+        return accountRepository.findByIdFetchingPixKeys(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conta", accountId));
     }
 
     @Transactional(readOnly = true)
     public Account findByCustomerId(UUID customerId) {
-        return accountRepository.findByCustomerId(customerId)
+        return accountRepository.findByCustomerIdFetchingPixKeys(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conta do cliente", customerId));
     }
 
@@ -109,8 +109,6 @@ public class AccountService {
     public Account findByPixKey(String keyValue) {
         PixKey key = pixKeyRepository.findByKeyValue(keyValue)
                 .orElseThrow(() -> new ResourceNotFoundException("Chave PIX", keyValue));
-        Account account = key.getAccount();
-        account.getPixKeys().size(); // força a inicialização da coleção lazy dentro da transação
-        return account;
+        return findById(key.getAccount().getId());
     }
 }

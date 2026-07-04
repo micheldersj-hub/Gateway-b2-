@@ -35,7 +35,7 @@ public class PostingService {
 
     @Transactional
     public JournalEntry post(String description, String idempotencyKey, String sourceEvent, List<PostingLineCommand> lines) {
-        return journalEntryRepository.findByIdempotencyKey(idempotencyKey)
+        return journalEntryRepository.findByIdempotencyKeyFetchingPostings(idempotencyKey)
                 .map(existing -> {
                     log.info("Lançamento idempotente já existente para chave '{}', ignorando reprocessamento", idempotencyKey);
                     return existing;
@@ -81,7 +81,7 @@ public class PostingService {
 
     @Transactional(readOnly = true)
     public JournalEntry findById(UUID journalEntryId) {
-        return journalEntryRepository.findById(journalEntryId)
+        return journalEntryRepository.findByIdFetchingPostings(journalEntryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lançamento contábil", journalEntryId));
     }
 }
