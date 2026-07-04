@@ -1,0 +1,145 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  # Flyway usa uma conexão JDBC própria apenas para rodar as migrações; a aplicação em runtime
+  # acessa o Postgres via R2DBC (reativo), sem bloquear o event-loop do Netty.
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:gateway_db}
+    user: ${DB_USER:gatewayb2}
+    password: ${DB_PASSWORD:gatewayb2}
+    locations: classpath:db/migration
+
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:gateway_db}
+    username: ${DB_USER:gatewayb2}
+    password: ${DB_PASSWORD:gatewayb2}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin
+      routes:
+        - id: kyc-service
+          uri: ${KYC_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/customers/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@clientKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: kyc-service
+                fallbackUri: forward:/fallback
+
+        - id: account-service
+          uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/accounts/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 60
+                key-resolver: "#{@clientKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: account-service
+                fallbackUri: forward:/fallback
+
+        - id: ledger-service
+          uri: ${LEDGER_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/ledger-accounts/**,/api/v1/journal-entries/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 60
+                key-resolver: "#{@clientKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: ledger-service
+                fallbackUri: forward:/fallback
+
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@clientKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: payment-service
+                fallbackUri: forward:/fallback
+
+        - id: card-service
+          uri: ${CARD_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/cards/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@clientKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: card-service
+                fallbackUri: forward:/fallback
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      kyc-service: &cb-defaults
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+      account-service: *cb-defaults
+      ledger-service: *cb-defaults
+      payment-service: *cb-defaults
+      card-service: *cb-defaults
+  timelimiter:
+    instances:
+      kyc-service: &tl-defaults
+        timeout-duration: 8s
+      account-service: *tl-defaults
+      ledger-service: *tl-defaults
+      payment-service: *tl-defaults
+      card-service: *tl-defaults
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,circuitbreakers
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+
+logging:
+  level:
+    com.gatewayb2: INFO
+    org.springframework.cloud.gateway: INFO
