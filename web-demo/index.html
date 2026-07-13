@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gateway B2 — Painel de teste</title>
+<style>
+  :root {
+    --paper: #edefe6;
+    --paper-2: #e2e5d7;
+    --paper-3: #d8dcc9;
+    --ink: #1c2620;
+    --ink-soft: #4b564c;
+    --ledger: #2b6e58;
+    --ledger-strong: #1f5443;
+    --rule: #c3c9b8;
+    --warn: #8a5a19;
+    --warn-bg: #f0e2c8;
+    --danger: #93392a;
+    --danger-bg: #ecdcd5;
+    --shadow: 0 1px 0 rgba(28, 38, 32, 0.06);
+
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+    --font-body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "Cascadia Code", Consolas, "SF Mono", ui-monospace, Menlo, monospace;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 1rem;
+    --space-4: 1.5rem;
+    --space-5: 2.5rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #121810; --paper-2: #1a2118; --paper-3: #232b20;
+      --ink: #e8ece2; --ink-soft: #a9b3a4;
+      --ledger: #56b494; --ledger-strong: #7bcbad;
+      --rule: #333d30; --warn: #d9a24e; --warn-bg: #35301f;
+      --danger: #dd8873; --danger-bg: #382420;
+      --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #121810; --paper-2: #1a2118; --paper-3: #232b20;
+    --ink: #e8ece2; --ink-soft: #a9b3a4;
+    --ledger: #56b494; --ledger-strong: #7bcbad;
+    --rule: #333d30; --warn: #d9a24e; --warn-bg: #35301f;
+    --danger: #dd8873; --danger-bg: #382420;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  }
+  :root[data-theme="light"] {
+    --paper: #edefe6; --paper-2: #e2e5d7; --paper-3: #d8dcc9;
+    --ink: #1c2620; --ink-soft: #4b564c;
+    --ledger: #2b6e58; --ledger-strong: #1f5443;
+    --rule: #c3c9b8; --warn: #8a5a19; --warn-bg: #f0e2c8;
+    --danger: #93392a; --danger-bg: #ecdcd5;
+    --shadow: 0 1px 0 rgba(28, 38, 32, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, .mono { font-family: var(--font-mono); }
+  .page { max-width: 40rem; margin: 0 auto; padding: var(--space-4) var(--space-3) 4rem; }
+
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-3); border-bottom: 1px solid var(--rule);
+    padding-bottom: var(--space-3); margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+  }
+  .brand .eyebrow {
+    font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ledger-strong); margin: 0 0 0.15rem;
+  }
+  .brand h1 {
+    font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; margin: 0;
+    text-wrap: balance;
+  }
+  .conn { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.75rem; }
+  .conn .dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--ink-soft); }
+  .conn.ok .dot { background: var(--ledger); }
+  .conn.bad .dot { background: var(--danger); }
+  .conn.checking .dot { background: var(--warn); animation: pulse 1s infinite ease-in-out; }
+  @media (prefers-reduced-motion: reduce) { .conn.checking .dot { animation: none; } }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  details.settings {
+    background: var(--paper-2); border: 1px solid var(--rule); border-radius: 6px;
+    padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: 0.875rem;
+  }
+  details.settings summary { cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); }
+  .settings-grid { display: grid; gap: var(--space-2); margin-top: var(--space-3); grid-template-columns: 1fr; }
+  .field label { display: block; font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 0.25rem; font-family: var(--font-mono); }
+  .field input, .field select {
+    width: 100%; padding: 0.5rem 0.6rem; border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--paper); color: var(--ink); font-family: var(--font-mono); font-size: 0.8125rem;
+  }
+  .field input:focus, .field select:focus, button:focus-visible {
+    outline: 2px solid var(--ledger); outline-offset: 1px;
+  }
+
+  .banner {
+    border-left: 3px solid var(--danger); background: var(--danger-bg);
+    padding: var(--space-3); border-radius: 0 6px 6px 0; margin-bottom: var(--space-4);
+    font-size: 0.875rem; display: none;
+  }
+  .banner.show { display: block; }
+  .banner strong { display: block; margin-bottom: 0.25rem; }
+
+  .step {
+    border: 1px solid var(--rule); border-radius: 8px; margin-bottom: var(--space-3);
+    background: var(--paper-2); box-shadow: var(--shadow); overflow: hidden;
+    transition: opacity 0.15s ease;
+  }
+  .step[data-locked="true"] { opacity: 0.5; }
+  .step-head {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    padding: var(--space-3); border-bottom: 1px solid var(--rule);
+  }
+  .step-head .title { display: flex; align-items: baseline; gap: 0.6rem; }
+  .step-num { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ledger-strong); }
+  .step-head h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+  .step-body { padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
+  .step-body.hidden { display: none; }
+
+  .row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .row .field { flex: 1; min-width: 9rem; }
+
+  button.primary {
+    font-family: var(--font-body); font-weight: 600; font-size: 0.875rem;
+    background: var(--ledger); color: var(--paper); border: none;
+    padding: 0.55rem 1rem; border-radius: 5px; cursor: pointer; align-self: flex-start;
+    transition: background 0.15s ease;
+  }
+  button.primary:hover { background: var(--ledger-strong); }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    font-family: var(--font-mono); font-size: 0.75rem; background: transparent;
+    color: var(--ink-soft); border: 1px solid var(--rule); padding: 0.35rem 0.7rem;
+    border-radius: 5px; cursor: pointer;
+  }
+  button.secondary:hover { border-color: var(--ledger); color: var(--ledger-strong); }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono);
+    font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 99px; border: 1px solid currentColor;
+  }
+  .pill::before { content: ""; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor; }
+  .pill.good { color: var(--ledger-strong); }
+  .pill.warn { color: var(--warn); }
+  .pill.bad { color: var(--danger); }
+  .pill.neutral { color: var(--ink-soft); }
+
+  .result {
+    border: 1px dashed var(--rule); border-radius: 6px; padding: var(--space-3);
+    background: var(--paper); display: none; font-size: 0.875rem;
+  }
+  .result.show { display: block; }
+  .result dl { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 0.75rem; margin: 0; }
+  .result dt { color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.75rem; }
+  .result dd { margin: 0; font-family: var(--font-mono); font-size: 0.8125rem; }
+
+  .reveal {
+    border: 1px solid var(--warn); background: var(--warn-bg); border-radius: 6px;
+    padding: var(--space-3); margin-top: var(--space-2); display: none;
+  }
+  .reveal.show { display: block; }
+  .reveal strong { display: block; font-size: 0.8125rem; margin-bottom: 0.5rem; }
+  .reveal .pan { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.05em; }
+
+  .balance-box {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: var(--space-3); background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
+  }
+  .balance-box .value { font-family: var(--font-mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+  .balance-box .label { font-size: 0.75rem; color: var(--ink-soft); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  details.log {
+    margin-top: var(--space-5); border-top: 1px solid var(--rule); padding-top: var(--space-3);
+  }
+  details.log summary { cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); }
+  .log-list { margin-top: var(--space-3); display: flex; flex-direction: column; gap: 0.4rem; max-height: 20rem; overflow-y: auto; }
+  .log-entry {
+    font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.6rem;
+    border-radius: 4px; background: var(--paper-3); overflow-x: auto; white-space: pre;
+  }
+  .log-entry.err { background: var(--danger-bg); color: var(--danger); }
+  .log-entry.ok { color: var(--ink-soft); }
+
+  footer { margin-top: var(--space-5); padding-top: var(--space-3); border-top: 1px solid var(--rule); font-size: 0.75rem; color: var(--ink-soft); }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%) translateY(0.5rem);
+    max-width: 26rem; width: calc(100% - 2rem);
+    background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);
+    border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.8125rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 100;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <div class="brand">
+      <p class="eyebrow">Gateway B2 · Banking as a Service</p>
+      <h1>Painel de teste</h1>
+    </div>
+    <div id="conn" class="conn checking"><span class="dot"></span><span id="connLabel">verificando conexão…</span></div>
+  </header>
+
+  <div id="connBanner" class="banner">
+    <strong>Não consegui falar com o gateway.</strong>
+    <span id="connBannerMsg">Confira se o <code>docker compose up</code> (ou os serviços locais) ainda está rodando, e se o endereço abaixo está correto.</span>
+  </div>
+
+  <details class="settings">
+    <summary>Configuração da conexão (só mexa se mudou a porta ou a chave)</summary>
+    <div class="settings-grid">
+      <div class="field">
+        <label for="baseUrl">Endereço do gateway</label>
+        <input id="baseUrl" type="text" value="http://localhost:8080">
+      </div>
+      <div class="field">
+        <label for="apiKey">X-API-Key</label>
+        <input id="apiKey" type="text" value="gwb2_sandbox_2ae1b72882db4b87c712424149ef8524">
+      </div>
+      <div><button class="secondary" onclick="testConnection()">Testar conexão agora</button></div>
+    </div>
+  </details>
+
+  <!-- STEP 1 -->
+  <section class="step" id="step1" data-locked="false">
+    <div class="step-head">
+      <div class="title"><span class="step-num">1</span><h2>Onboarding (KYC)</h2></div>
+      <span id="step1status" class="pill neutral">pendente</span>
+    </div>
+    <div class="step-body">
+      <div class="row">
+        <div class="field"><label>Nome</label><input id="c_name" value="Maria Silva"></div>
+        <div class="field"><label>E-mail</label><input id="c_email" value="maria@example.com"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>CPF</label><input id="c_document" value="52998224725"></div>
+        <div class="field"><label>Nascimento</label><input id="c_birth" type="date" value="1990-01-01"></div>
+      </div>
+      <button class="primary" onclick="createCustomer()">Criar cliente</button>
+      <div id="approveBox" style="display:none">
+        <button class="secondary" onclick="approveCustomer()">Aprovar manualmente (necessário quando status = IN_REVIEW)</button>
+      </div>
+      <div id="r_customer" class="result">
+        <dl>
+          <dt>status</dt><dd id="rc_status">—</dd>
+          <dt>score de risco</dt><dd id="rc_score">—</dd>
+          <dt>customerId</dt><dd id="rc_id">—</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step" id="step2" data-locked="true">
+    <div class="step-head">
+      <div class="title"><span class="step-num">2</span><h2>Conta digital</h2></div>
+      <span id="step2status" class="pill neutral">aguardando etapa 1</span>
+    </div>
+    <div class="step-body">
+      <p style="margin:0;font-size:0.8125rem;color:var(--ink-soft)">A conta é criada sozinha (evento assíncrono) assim que o cliente é aprovado. Pode levar 1-2 segundos.</p>
+      <button class="primary" onclick="fetchAccount()">Consultar conta</button>
+      <div id="r_account" class="result">
+        <dl>
+          <dt>conta</dt><dd id="ra_number">—</dd>
+          <dt>agência</dt><dd id="ra_branch">—</dd>
+          <dt>status</dt><dd id="ra_status">—</dd>
+          <dt>chave PIX</dt><dd id="ra_pix">—</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step" id="step3" data-locked="true">
+    <div class="step-head">
+      <div class="title"><span class="step-num">3</span><h2>Saldo &amp; PIX</h2></div>
+      <span id="step3status" class="pill neutral">aguardando etapa 2</span>
+    </div>
+    <div class="step-body">
+      <div class="balance-box">
+        <span class="label">Saldo atual</span>
+        <span class="value"><span id="balanceValue">R$ 0,00</span> <button class="secondary" onclick="fetchBalance()">atualizar</button></span>
+      </div>
+      <div class="row">
+        <div class="field"><label>Valor recebido (R$)</label><input id="p_amount" type="number" step="0.01" value="500.00"></div>
+        <div class="field"><label>Pagador</label><input id="p_payer" value="Empresa XYZ"></div>
+      </div>
+      <button class="primary" onclick="receivePix()">Simular recebimento de PIX</button>
+      <div id="r_pix" class="result"><dl><dt>status</dt><dd id="rp_status">—</dd></dl></div>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="step" id="step4" data-locked="true">
+    <div class="step-head">
+      <div class="title"><span class="step-num">4</span><h2>Cartão</h2></div>
+      <span id="step4status" class="pill neutral">aguardando etapa 2</span>
+    </div>
+    <div class="step-body">
+      <button class="primary" onclick="issueCard()">Emitir cartão virtual</button>
+      <div id="r_card" class="result">
+        <dl>
+          <dt>cartão</dt><dd id="rk_masked">—</dd>
+          <dt>limite diário</dt><dd id="rk_limit">—</dd>
+        </dl>
+      </div>
+      <div id="cardReveal" class="reveal">
+        <strong>⚠️ Mostrado uma única vez — anote se precisar, não vai aparecer de novo</strong>
+        <div class="pan" id="rk_pan">—</div>
+        <div class="mono" id="rk_cvv">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="step" id="step5" data-locked="true">
+    <div class="step-head">
+      <div class="title"><span class="step-num">5</span><h2>Autorizar compra</h2></div>
+      <span id="step5status" class="pill neutral">aguardando etapa 4</span>
+    </div>
+    <div class="step-body">
+      <div class="row">
+        <div class="field"><label>Valor (R$)</label><input id="t_amount" type="number" step="0.01" value="89.90"></div>
+        <div class="field"><label>Estabelecimento</label><input id="t_merchant" value="Mercado ABC"></div>
+      </div>
+      <button class="primary" onclick="authorize()">Autorizar</button>
+      <div class="row" style="margin-top:-0.25rem">
+        <button class="secondary" onclick="document.getElementById('t_amount').value='6000.00'; document.getElementById('t_merchant').value='Loja Cara Ltda';">preencher exemplo que deve recusar (limite diário)</button>
+      </div>
+      <div id="r_tx" class="result"><dl><dt>status</dt><dd id="rt_status">—</dd><dt>motivo</dt><dd id="rt_reason">—</dd></dl></div>
+    </div>
+  </section>
+
+  <details class="log">
+    <summary>Registro de chamadas à API (para curiosos e depuração)</summary>
+    <div id="logList" class="log-list"></div>
+  </details>
+
+  <footer>Painel de teste local do Gateway B2. Nenhum dado sai do seu navegador além das chamadas ao gateway configurado acima.</footer>
+</div>
+
+<div id="toast" role="alert"></div>
+
+<script>
+  const state = { customerId: null, accountId: null, cardId: null };
+
+  const $ = (id) => document.getElementById(id);
+  const baseUrlInput = $('baseUrl');
+  const apiKeyInput = $('apiKey');
+
+  (function restoreSettings() {
+    const savedUrl = localStorage.getItem('gwb2_baseUrl');
+    const savedKey = localStorage.getItem('gwb2_apiKey');
+    if (savedUrl) baseUrlInput.value = savedUrl;
+    if (savedKey) apiKeyInput.value = savedKey;
+  })();
+  baseUrlInput.addEventListener('change', () => localStorage.setItem('gwb2_baseUrl', baseUrlInput.value));
+  apiKeyInput.addEventListener('change', () => localStorage.setItem('gwb2_apiKey', apiKeyInput.value));
+
+  function uuid() {
+    return crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  function logCall(method, path, status, ok, detail) {
+    const list = $('logList');
+    const div = document.createElement('div');
+    div.className = 'log-entry ' + (ok ? 'ok' : 'err');
+    const time = new Date().toLocaleTimeString('pt-BR');
+    div.textContent = `[${time}] ${method} ${path} → ${status}${detail ? '  ' + detail : ''}`;
+    list.prepend(div);
+  }
+
+  async function api(method, path, body, extraHeaders) {
+    const url = baseUrlInput.value.replace(/\/$/, '') + path;
+    const headers = { 'X-API-Key': apiKeyInput.value, ...(extraHeaders || {}) };
+    if (body) headers['Content-Type'] = 'application/json';
+    let res, text;
+    try {
+      res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      text = await res.text();
+    } catch (e) {
+      logCall(method, path, 'sem resposta', false, e.message);
+      setConn(false, 'não foi possível conectar');
+      throw new Error('Não foi possível conectar em ' + url + '. Verifique se o backend está rodando.');
+    }
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch (_) { /* resposta não-JSON */ }
+    logCall(method, path, res.status, res.ok, json && json.errorCode ? json.errorCode : '');
+    if (!res.ok) {
+      const err = new Error((json && json.message) || ('HTTP ' + res.status));
+      err.body = json;
+      err.status = res.status;
+      throw err;
+    }
+    return json;
+  }
+
+  function setConn(ok, label) {
+    const el = $('conn');
+    el.className = 'conn ' + (ok === null ? 'checking' : (ok ? 'ok' : 'bad'));
+    $('connLabel').textContent = label;
+    $('connBanner').classList.toggle('show', ok === false);
+  }
+
+  async function testConnection() {
+    setConn(null, 'verificando…');
+    try {
+      const url = baseUrlInput.value.replace(/\/$/, '') + '/actuator/health';
+      const res = await fetch(url);
+      if (res.ok) { setConn(true, 'conectado'); return true; }
+      setConn(false, 'gateway respondeu ' + res.status);
+      return false;
+    } catch (e) {
+      setConn(false, 'sem conexão');
+      return false;
+    }
+  }
+
+  let toastTimer = null;
+  function showError(message) {
+    const el = $('toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 6000);
+  }
+
+  function setPill(id, kind, text) {
+    const el = $(id);
+    el.className = 'pill ' + kind;
+    el.textContent = text;
+  }
+
+  function unlock(stepId, statusId, text) {
+    $(stepId).dataset.locked = 'false';
+    setPill(statusId, 'neutral', text);
+  }
+
+  function money(v) {
+    return (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // ---- Step 1: KYC ----
+  async function createCustomer() {
+    try {
+      const body = {
+        personType: 'INDIVIDUAL',
+        document: $('c_document').value,
+        name: $('c_name').value,
+        email: $('c_email').value,
+        birthDate: $('c_birth').value
+      };
+      const data = await api('POST', '/api/v1/customers', body);
+      state.customerId = data.id;
+      $('r_customer').classList.add('show');
+      $('rc_status').textContent = data.status;
+      $('rc_score').textContent = data.riskScore;
+      $('rc_id').textContent = data.id;
+      const kind = data.status === 'APPROVED' ? 'good' : data.status === 'REJECTED' ? 'bad' : 'warn';
+      setPill('step1status', kind, data.status);
+      $('approveBox').style.display = data.status === 'IN_REVIEW' ? 'block' : 'none';
+      if (data.status === 'APPROVED') {
+        unlock('step2', 'step2status', 'pronto');
+      }
+    } catch (e) {
+      setPill('step1status', 'bad', 'erro');
+      showError('Falha ao criar cliente: ' + e.message);
+    }
+  }
+
+  async function approveCustomer() {
+    try {
+      const data = await api('POST', `/api/v1/customers/${state.customerId}/decision`, { decision: 'APPROVE', reason: 'Aprovado manualmente no painel de teste' });
+      $('rc_status').textContent = data.status;
+      setPill('step1status', 'good', data.status);
+      $('approveBox').style.display = 'none';
+      unlock('step2', 'step2status', 'pronto');
+    } catch (e) {
+      showError('Falha ao aprovar cliente: ' + e.message);
+    }
+  }
+
+  // ---- Step 2: Account ----
+  async function fetchAccount(retriesLeft = 5) {
+    try {
+      const data = await api('GET', `/api/v1/accounts/by-customer/${state.customerId}`);
+      state.accountId = data.id;
+      $('r_account').classList.add('show');
+      $('ra_number').textContent = data.accountNumber + ' / ag. ' + data.branch;
+      $('ra_branch').textContent = data.branch;
+      $('ra_status').textContent = data.status;
+      $('ra_pix').textContent = (data.pixKeys[0] && data.pixKeys[0].keyValue) || '—';
+      setPill('step2status', 'good', 'conta ativa');
+      unlock('step3', 'step3status', 'pronto');
+      unlock('step4', 'step4status', 'pronto');
+      fetchBalance();
+    } catch (e) {
+      if (e.status === 404 && retriesLeft > 0) {
+        setPill('step2status', 'warn', 'aguardando evento…');
+        setTimeout(() => fetchAccount(retriesLeft - 1), 1500);
+        return;
+      }
+      setPill('step2status', 'bad', 'erro');
+      showError('Falha ao consultar conta: ' + e.message);
+    }
+  }
+
+  // ---- Step 3: Balance & PIX ----
+  async function fetchBalance() {
+    if (!state.accountId) return;
+    try {
+      const data = await api('GET', `/api/v1/ledger-accounts/by-external-account/${state.accountId}/balance`);
+      $('balanceValue').textContent = money(data.balance);
+    } catch (e) {
+      $('balanceValue').textContent = 'erro';
+    }
+  }
+
+  async function receivePix() {
+    try {
+      const body = {
+        destinationPixKey: $('ra_pix').textContent,
+        amount: parseFloat($('p_amount').value),
+        payerName: $('p_payer').value,
+        payerDocument: '11222333000181'
+      };
+      const data = await api('POST', '/api/v1/payments/pix/receive', body, { 'Idempotency-Key': 'pix-recv-' + uuid() });
+      $('r_pix').classList.add('show');
+      $('rp_status').textContent = data.status;
+      setPill('step3status', data.status === 'COMPLETED' ? 'good' : 'bad', data.status);
+      fetchBalance();
+    } catch (e) {
+      showError('Falha ao simular PIX: ' + e.message);
+    }
+  }
+
+  // ---- Step 4: Card ----
+  async function issueCard() {
+    try {
+      const body = { accountId: state.accountId, cardType: 'VIRTUAL', holderName: $('c_name').value.toUpperCase() };
+      const data = await api('POST', '/api/v1/cards', body);
+      state.cardId = data.card.id;
+      $('r_card').classList.add('show');
+      $('rk_masked').textContent = data.card.panMasked;
+      $('rk_limit').textContent = money(data.card.dailyLimit) + ' / dia';
+      $('cardReveal').classList.add('show');
+      $('rk_pan').textContent = data.pan;
+      $('rk_cvv').textContent = 'CVV: ' + data.cvv;
+      setPill('step4status', 'good', data.card.status);
+      unlock('step5', 'step5status', 'pronto');
+    } catch (e) {
+      showError('Falha ao emitir cartão: ' + e.message);
+    }
+  }
+
+  // ---- Step 5: Authorize ----
+  async function authorize() {
+    try {
+      const body = { amount: parseFloat($('t_amount').value), merchantName: $('t_merchant').value };
+      const data = await api('POST', `/api/v1/cards/${state.cardId}/authorize`, body, { 'Idempotency-Key': 'card-tx-' + uuid() });
+      $('r_tx').classList.add('show');
+      $('rt_status').textContent = data.status;
+      $('rt_reason').textContent = data.declineReason || '—';
+      setPill('step5status', data.status === 'AUTHORIZED' ? 'good' : 'bad', data.status);
+      fetchBalance();
+    } catch (e) {
+      showError('Falha ao autorizar transação: ' + e.message);
+    }
+  }
+
+  testConnection();
+</script>
+</body>
+</html>

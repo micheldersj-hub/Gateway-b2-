@@ -16,6 +16,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Autenticação de parceiros via API Key (modelo semelhante a Stripe/outras plataformas BaaS).
@@ -59,15 +60,25 @@ public class ApiKeyAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         String hash = ApiKeyHasher.sha256Hex(apiKey);
+        // Importante: não usar .flatMap(...).switchIfEmpty(...) aqui. chain.filter(...) retorna
+        // Mono<Void>, que nunca emite item (só onComplete) - para o Reactor isso é indistinguível
+        // de "upstream vazio", então switchIfEmpty dispararia de novo mesmo após uma autenticação
+        // bem-sucedida, tentando escrever uma segunda resposta sobre a conexão já finalizada.
+        // Envolver em Optional resolve a ambiguidade antes de compor com o Mono<Void> da chain.
         return apiClientRepository.findByApiKeyHashAndActiveTrue(hash)
-                .flatMap(client -> {
+                .map(Optional::of)
+                .defaultIfEmpty(Optional.empty())
+                .flatMap(maybeClient -> {
+                    if (maybeClient.isEmpty()) {
+                        return unauthorized(exchange, "API_KEY_INVALID", "API Key inválida ou inativa");
+                    }
+                    var client = maybeClient.get();
                     ServerHttpRequest mutatedRequest = request.mutate()
                             .header(CLIENT_ID_HEADER, client.id().toString())
                             .header(CLIENT_NAME_HEADER, client.clientName())
                             .build();
                     return chain.filter(exchange.mutate().request(mutatedRequest).build());
-                })
-                .switchIfEmpty(Mono.defer(() -> unauthorized(exchange, "API_KEY_INVALID", "API Key inválida ou inativa")));
+                });
     }
 
     private boolean isPublic(String path) {

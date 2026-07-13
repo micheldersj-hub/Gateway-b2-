@@ -31,6 +31,16 @@ spring:
         response-timeout: 10s
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin
+      # CORS liberado para todas as origens: uso local/demo (o app web de teste roda como um
+      # arquivo HTML aberto direto no navegador, sem servidor próprio). Em produção, restrinja
+      # a allowed-origin-patterns aos domínios reais dos parceiros.
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: false
       routes:
         - id: kyc-service
           uri: ${KYC_SERVICE_URL:http://localhost:8081}
@@ -133,6 +143,11 @@ management:
     web:
       exposure:
         include: health,info,gateway,circuitbreakers
+      # O Actuator é servido por um handler separado das rotas do Gateway, então o
+      # spring.cloud.gateway.globalcors acima não o cobre: precisa da própria config de CORS.
+      cors:
+        allowed-origin-patterns: "*"
+        allowed-methods: GET
   endpoint:
     health:
       probes:

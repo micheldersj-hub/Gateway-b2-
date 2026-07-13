@@ -96,6 +96,15 @@ X-API-Key: gwb2_sandbox_2ae1b72882db4b87c712424149ef8524
 Cada serviço também expõe Swagger UI individualmente (útil em desenvolvimento, sem passar pelo
 gateway): `http://localhost:808{1..5}/swagger-ui.html`.
 
+## Painel de teste (web-demo/)
+
+Para testar sem escrever nenhum comando: abra `web-demo/index.html` direto no navegador (duplo
+clique, não precisa de servidor) com a stack rodando via `docker compose up`. É uma página só,
+sem dependências externas, com um passo a passo guiado (onboarding → conta → PIX → cartão →
+autorização) e um registro de todas as chamadas feitas à API. O endereço do gateway e a API Key
+já vêm preenchidos com os valores padrão locais; dá para trocar no painel "Configuração da
+conexão" se você mudou alguma porta.
+
 ## Fluxo de ponta a ponta (exemplo)
 
 ```bash
